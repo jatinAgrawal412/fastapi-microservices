@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  inventory-api:
+    # build:
+    #   context: .
+    #   dockerfile: inventory/Dockerfile
+    image: jatincrest/inventory-api:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=sqlite:////data/inventory.db
+      - JWT_SECRET=super-secret-key
+      - JWT_ALGORITHM=HS256
+    volumes:
+      - inventory-db:/data
+    depends_on:
+      - redis
+
+  inventory-consumer:
+    # build:
+    #   context: .
+    #   dockerfile: inventory/Dockerfile.consumer
+    image: jatincrest/inventory-consumer:latest
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=sqlite:////data/inventory.db
+    volumes:
+      - inventory-db:/data
+    depends_on:
+      - redis
+      - inventory-api
+
+  payment-api:
+    # build:
+    #   context: .
+    #   dockerfile: payment/Dockerfile
+    image: jatincrest/payment-api:latest
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - INVENTORY_SERVICE_URL=http://inventory-api:8000
+      - DATABASE_URL=sqlite:////data/payment.db
+      - JWT_SECRET=super-secret-key
+      - JWT_ALGORITHM=HS256
+    volumes:
+      - payment-db:/data
+    depends_on:
+      - redis
+      - inventory-api
+
+  payment-consumer:
+    # build:
+    #   context: .
+    #   dockerfile: payment/Dockerfile.consumer
+    image: jatincrest/payment-consumer:latest
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=sqlite:////data/payment.db
+    volumes:
+      - payment-db:/data
+    depends_on:
+      - redis
+      - payment-api
+
+  user-api:
+    # build:
+    #   context: .
+    #   dockerfile: user/Dockerfile
+    image: jatincrest/user-api:latest
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=sqlite:////data/user.db
+      - JWT_SECRET=super-secret-key
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_MINUTES=60
+    volumes:
+      - user-db:/data
+
+volumes:
+  inventory-db:
+  payment-db:
+  user-db:

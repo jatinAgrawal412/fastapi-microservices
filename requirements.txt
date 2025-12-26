@@ -1,0 +1,10 @@
+fastapi==0.115.7
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.32
+pydantic==2.9.2
+pydantic-settings==2.6.1
+requests==2.32.3
+redis==5.2.0
+passlib[argon2]
+python-jose
+email-validator
